@@ -1,0 +1,41 @@
+---
+title: "Estimating rate of growth of SARS-CoV-2 in the European population"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r}
+
+
+
+#read observations
+observed_file_path = "ms_obs_final.out"
+obs_data = readLines(observed_file_path)
+
+
+#read simulations
+sim_file_path = "ms_sim_final.out"
+
+# Read the file using readLines()
+lines <- readLines(sim_file_path)
+
+# Specify the number of simulations
+total_simulations <- 10000
+
+# Specify the number of rows per simulation
+rows_per_simulation <- 50
+
+simulations = vector("list", total_simulations)
+
+for(curr_sim in 1:total_simulations) {
+  
+  
+  
+}
+
+
+
+
+
+
+```
