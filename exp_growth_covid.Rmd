@@ -7,35 +7,239 @@ date: "`r Sys.Date()`"
 ```{r}
 
 
-
 #read observations
 observed_file_path = "ms_obs_final.out"
 obs_data = readLines(observed_file_path)
+
+
 
 
 #read simulations
 sim_file_path = "ms_sim_final.out"
 
 # Read the file using readLines()
-lines <- readLines(sim_file_path)
+lines = readLines(sim_file_path)
+
 
 # Specify the number of simulations
-total_simulations <- 10000
+total_simulations = 10000
 
 # Specify the number of rows per simulation
-rows_per_simulation <- 50
+rows_per_simulation = 50
 
+#final list containing all simulations
 simulations = vector("list", total_simulations)
 
+#formatting lines vector into simulations
 for(curr_sim in 1:total_simulations) {
+  start = curr_sim + (curr_sim - 1) * rows_per_simulation
+  end = (curr_sim - 1) + curr_sim * rows_per_simulation
   
+  
+  simulations[[curr_sim]] = lines[start:end]
+}
+
+
+
+```
+
+
+
+calculate k-value for each sim
+
+```{r}
+library(stringdist)
+
+
+
+# calculates the pairwise difference between a pair of sequences.
+pairwisediff <- function(arr1, arr2) {
+  return (stringdist::stringdist(arr1, arr2, method = "hamming"))
+}
+
+
+# calculates the average number of pairwise difference between ALL pairs of sequences.
+k_estimate <- function(simulation) {
+  
+  num_arrays = length(simulation)
+  sum_diff = 0
+  
+  #sum all pairwise differences
+  for(i in 1:(num_arrays - 1)) {
+    for(j in (i + 1):num_arrays) {
+      sum_diff = sum_diff + pairwisediff(simulation[[i]],simulation[[j]])
+    }
+  }
+  #calculate average
+  k_val = sum_diff / choose(num_arrays,2)
+  
+  return (k_val)
+}
+
+
+
+
+```
+```{r}
+
+
+# # EXAMPLE, SAME AS NOTES
+# ex = list(
+#   c("0010100101"),
+#   c("1001011101"),
+#   c("1111111010")
+# )
+# print(ex)
+# 
+# nchar(ex[[1]])
+# 
+# #SLOW FUNCTION
+# k = k_estimate(ex)
+# k
+
+
+# # Set the length of the random vector
+# length <- 10
+# 
+# # Number of instances in the list
+# num_strings <- 500
+# 
+# 
+# random_list <- replicate(num_strings, paste(sample(c("0", "1"), length, replace = TRUE), collapse = ""), simplify = FALSE)
+
+
+
+exec_time <- system.time(k_estimate(random_list))
+exec_time
+
+
+
+```
+
+calculate w
+
+```{r}
+
+
+calc_a1 <- function(n) {
+  a_1 = 0
+  for(i in 1:(n-1)) {
+    a_1 = a_1 + 1/i
+  }
+  
+  return (a_1)
+}
+
+w_estimate <- function(s,n) {
+  
+  if(n == 0) {
+    print("n must be positive!")
+    return
+  }
+
+  a_1 = calc_a1(n)
+  
+  w = s / a_1
+  
+  return(w)
+  
+}
+
+
+s_0 = nchar(ex[[1]])
+s_0
+n_0 = length(ex)
+
+w = w_estimate(s_0,n_0)
+w
+
+```
+
+calculate Tajima's D
+
+```{r}
+
+calc_a2 <- function(n) {
+  a_2 = 0
+  for(i in 1:(n-1)) {
+    a_2 = a_2 + (1/i)^2 
+  }
+  
+  return (a_2)
+}
+
+D_estimation <- function(k,w,S,n) {
+  
+  if(n == 0 || n == 1) {
+    print("ERROR: n must be greater than 1!")
+    return
+  }
+  
+  a_1 = calc_a1(n)
+  a_2 = calc_a2(n)
+  
+  b_1 = (n + 1) / (3 * (n - 1))
+  b_2 = (2 * (n^2 + n + 3)) / (9 * n * (n - 1))
+  
+  c_1 = b_1 - 1/a_1
+  c_2 = b_2 - (n + 2) / (a_1 * n) + (a_2) / (a_1^2)
+  
+  e_1 = c_1/a_1
+  e_2 = c_2/ (a_1^2 + a_2)
+  
+  
+  d_num = k - w
+  d_denom = (e_1 * S) + (e_2 * S) * (S - 1)
+  
+  D = d_num / sqrt(d_denom)
+  
+  return(D)
   
   
 }
 
 
 
+```
 
+```{r}
+
+tajimas_D <- function(simulation, show=0) {
+  
+  #calculate k
+  k = k_estimate(simulation)
+  
+  
+  #calculate w
+  s = nchar(simulation[[1]])
+  n = length(simulation)
+  
+  w = w_estimate(s,n)
+  
+  
+  #calculate D
+  d = D_estimation(k,w,s,n)
+  
+  
+  if(show != 0) {
+    print(paste("k:", k))
+    print(paste("w:",w))
+    print(paste("Tajima's D: ", d))
+  }
+    
+  
+  return (d)
+  
+  
+}
+
+
+dists = lapply(simulations,tajimas_D)
+dists
+
+mean(unlist(dists))
 
 
 ```
+
+
