@@ -360,17 +360,82 @@ norm_k = normalize_param(sims_params[1,])
 norm_w = normalize_param(sims_params[2,])
 norm_d = normalize_param(sims_params[3,])
 
+
+sims_norm_params = lapply(1:total_simulations, function(i) list(k = norm_k[i], w = norm_w[i], d = norm_d[i]))
+
 #normalize observed parameters
 obs_norm_k = normalize_obs_param(obs_params[1],sims_params[1,])
 obs_norm_w = normalize_obs_param(obs_params[2],sims_params[2,])
 obs_norm_d = normalize_obs_param(obs_params[3],sims_params[3,])
 
+#bundle results into a list
+obs_norm_params = list(k = obs_norm_k, w = obs_norm_w, d = obs_norm_d)
 
 ```
 
+At this point we have calculated and normalized all the values we need, to start approximating the parameter that was used in the observed database.
+
+The approach that we will use is, find the 500 most similar simulations to our observed ones, and based on those, approximate the parameter that we are after.
+
+To find these 500 simulations, we  will calculate the Euclidean distance between the observed and each of the simulated datasets.
+
+```{r}
+
+#function takes as input a list obs_params which has 3 indexes for each param
+#as well as, another list that corresponds to the param of a simulation
+#and returns their euclidian distance
+eucl_dist <- function(obs_params, sim_params) {
+  
+  dist =  (obs_params$k - sim_params$k)^2 
+        + (obs_params$w - sim_params$w)^2 
+        + (obs_params$d - sim_params$d)^2
+  
+  return(sqrt(dist)[[1]])
+  
+}
 
 
+#apply function to all simulations
+dists = lapply(sims_norm_params, eucl_dist, obs_norm_params)
+dists_vec = unlist(dists)
 
+```
+
+We have calculated each simulation's distance to our observed dataset. We need to keep in mind that, each simulation was calculated based on another parameter that we haven't talked about until now.
+
+Our end goal is not to find the 500 simulations that are closest to our observations, but rather, the 500 parameters that were used to generate these simulations.
+
+We must now, assosiate each distance with the parameter that generated it. The parameter list is in the file called pars_final.txt.
+
+
+```{r}
+
+#load pars_final file
+params_file_path = "pars_final.txt"
+generate_params = readLines(params_file_path) 
+
+
+#associate parameters with their distance
+params_dists = data.frame(dist = dists_vec, param = generate_params)
+params_dists
+
+#sort the dataframe based on the distances
+sorted_indices = order(params_dists$dist)
+sorted_params_dists = params_dists[sorted_indices, ]
+
+#sorted dataframe
+sorted_params_dists
+
+#sorted params vector
+sorted_params = as.numeric(sorted_params_dists$param)
+sorted_params
+
+#keep only the best results
+threshold = 500
+best_params = sorted_params[1:threshold]
+best_params
+
+```
 
 
 
