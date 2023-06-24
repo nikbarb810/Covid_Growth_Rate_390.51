@@ -157,8 +157,6 @@ exec_time_cpp <- system.time(k_estimate_cpp(random_list))
 print(exec_time_cpp)
 
 
-
-
 ```
 
 We can definitely see that, implementing Rcpp code snippets, even in this small example has the potential to dramatically increase our performance.
@@ -319,17 +317,60 @@ tajimas_D <- function(simulation, show=0) {
   
 }
 
-time = system.time(lapply(simulations,tajimas_D))
-time
+#calculate the parameters for all simulations
+sims_params = sapply(simulations,tajimas_D)
 
-dists = lapply(simulations,tajimas_D)
-dists
+#calculate the parameters for observed data
+obs_params = tajimas_D(obs_data)
+obs_params[1]
+
+```
 
 
+We now have calculated all 3 parameters for all of our simulations, as well as, the observed dataset. Before we try to approximate the parameter that calculated our observations, we have to normalize the simulations' data.
 
-mean(unlist(dists))
+```{r}
+
+#function takes as input a vector containing values of a parameter
+#and returns a vector of the parameter's normalized values 
+normalize_param <- function(param_vec) {
+  
+  params_mean = mean(param_vec)
+  params_std = sqrt(var(param_vec))
+  
+  params_norm = (param_vec - params_mean) / params_std
+  
+  return(params_norm)
+  
+  
+}
+
+normalize_obs_param <- function(obs_param, sim_param_vec) {
+  
+  params_mean = mean(sim_param_vec)
+  params_std = sqrt(var(sim_param_vec))
+  
+  param_norm = (obs_param - params_mean) / params_std
+  
+  return (param_norm)
+}
+
+#normalize sims' parameters
+norm_k = normalize_param(sims_params[1,])
+norm_w = normalize_param(sims_params[2,])
+norm_d = normalize_param(sims_params[3,])
+
+#normalize observed parameters
+obs_norm_k = normalize_obs_param(obs_params[1],sims_params[1,])
+obs_norm_w = normalize_obs_param(obs_params[2],sims_params[2,])
+obs_norm_d = normalize_obs_param(obs_params[3],sims_params[3,])
 
 
 ```
+
+
+
+
+
 
 
