@@ -322,12 +322,11 @@ sims_params = sapply(simulations,tajimas_D)
 
 #calculate the parameters for observed data
 obs_params = tajimas_D(obs_data)
-obs_params[1]
 
 ```
 
 
-We now have calculated all 3 parameters for all of our simulations, as well as, the observed dataset. Before we try to approximate the parameter that calculated our observations, we have to normalize the simulations' data.
+We now have calculated all 3 parameters for all of our simulations, as well as for the observed dataset. Before we try to approximate the parameter that calculated our observations, we have to normalize the simulations' and observation's data.
 
 ```{r}
 
@@ -341,10 +340,11 @@ normalize_param <- function(param_vec) {
   params_norm = (param_vec - params_mean) / params_std
   
   return(params_norm)
-  
-  
 }
 
+#function takes as input a single value for a parameter,
+#as well as, the parameter's values in the simulation
+#and returns the observed parameter normalized by the sims
 normalize_obs_param <- function(obs_param, sim_param_vec) {
   
   params_mean = mean(sim_param_vec)
