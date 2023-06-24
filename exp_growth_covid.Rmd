@@ -91,11 +91,7 @@ We can obtain the same functionality by the following cpp code, using Rcpp.
 using namespace Rcpp;
 
 // Function to calculate pairwise differences
-int pairwisediff_cpp(CharacterVector arr1, CharacterVector arr2) {
-  // types CharacterVector MUST be converted to c++ strings to achieve functionality of cpp lib funcs, like            // str.size()
-  std::string str1 = Rcpp::as<std::string>(arr1);
-  std::string str2 = Rcpp::as<std::string>(arr2);
-  
+int pairwisediff_cpp(const std::string& str1, const std::string& str2) {
   int n = str1.size();
   int diff = 0;
   
@@ -110,22 +106,25 @@ int pairwisediff_cpp(CharacterVector arr1, CharacterVector arr2) {
 
 // Function to calculate k estimate
 // [[Rcpp::export]]
-double k_estimate_cpp(List simulation) {
-  
+double k_estimate_cpp(const List& simulation) {
   int num_arrays = simulation.size();
   int sum_diff = 0;
   
+  // Convert simulation indexes to C++ strings
+  std::vector<std::string> strings(num_arrays);
+  for (int i = 0; i < num_arrays; ++i) {
+    strings[i] = Rcpp::as<std::string>(simulation[i]);
+  }
   
   // Sum all pairwise differences
   for (int i = 0; i < (num_arrays - 1); ++i) {
     for (int j = (i + 1); j < num_arrays; ++j) {
-      
-      sum_diff += pairwisediff_cpp(simulation[i], simulation[j]);
+      sum_diff += pairwisediff_cpp(strings[i], strings[j]);
     }
   }
   
   // Calculate average
-  double k_val = sum_diff / Rf_choose(num_arrays, 2);
+  double k_val = static_cast<double>(sum_diff) / Rf_choose(num_arrays, 2);
   
   return k_val;
 }
@@ -134,7 +133,7 @@ double k_estimate_cpp(List simulation) {
 
 
 
-Below we can see a speed comparison between the 2 options, on a single random simulation that contains 500 strings
+Below we can see a speed comparison between the 2 options, on a single random simulation that contains 2000 strings.
 ```{r}
 
 
@@ -143,17 +142,17 @@ Below we can see a speed comparison between the 2 options, on a single random si
 length <- 10
 
 # Number of instances in the list
-num_strings <- 500
+num_strings <- 2000
 
 
 random_list <- replicate(num_strings, paste(sample(c("0", "1"), length, replace = TRUE), collapse = ""), simplify = FALSE)
 
 
-# 6.36 seconds
+# 96.38 seconds
 exec_time <- system.time(k_estimate(random_list))
 print(exec_time)
 
-# 0.03 seconds
+# 0.02 seconds
 exec_time_cpp <- system.time(k_estimate_cpp(random_list))
 print(exec_time_cpp)
 
@@ -169,16 +168,17 @@ But what's the difference in our actual database, which contains 10000 simulatio
 
 #calc time in r 
 r_sims_time <- system.time(lapply(simulations,k_estimate))
-print(r_sims_time) #676 seconds
+print(r_sims_time) #606 seconds
 
 #calc time in cpp
 cpp_sims_time <- system.time(lapply(simulations,k_estimate_cpp))
-print(cpp_sims_time) #6.7 seconds
+print(cpp_sims_time) #1.1 seconds
 
 
 #calculate actual values
 k_vals_r = lapply(simulations,k_estimate) #wayyyy too slow
 k_vals_cpp = lapply(simulations,k_estimate_cpp)
+
 
 #compare 
 comp <- mapply(identical,k_vals_r,k_vals_cpp)
@@ -324,6 +324,8 @@ time
 
 dists = lapply(simulations,tajimas_D)
 dists
+
+
 
 mean(unlist(dists))
 
