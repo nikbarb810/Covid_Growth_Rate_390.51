@@ -144,7 +144,7 @@ length <- 10
 # Number of instances in the list
 num_strings <- 2000
 
-
+#randomly generated list used for testing
 random_list <- replicate(num_strings, paste(sample(c("0", "1"), length, replace = TRUE), collapse = ""), simplify = FALSE)
 
 
@@ -436,6 +436,29 @@ best_params = sorted_params[1:threshold]
 best_params
 
 ```
+We have successfully detected the 500 parameters, that were used to generate simulations that were closest to our observations. 
+
+We can now, deep dive into these values, to try and find the parameter that was used to generate our observed dataset.
+
+```{r}
+#calculate mean and median of parameters
+mean_params = mean(best_params)
+median_params = median(best_params)
+
+
+hist(best_params)
+plot(density(best_params))
+
+
+
+```
+
+
+
+
+
+
+
 
 
 
