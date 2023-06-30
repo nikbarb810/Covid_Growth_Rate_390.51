@@ -4,13 +4,19 @@ output: html_document
 date: "`r Sys.Date()`"
 ---
 
+We are tasked with estimating the growth rate of the SARS-CoV-2 virus in the European population, based on mutations in the genomes compared to the reference genomes of the bat SARS virus.
+
+We are after the parameter that 'generated' the changes that we observed. We will calculate Tajima's D both on our observation, as well as to some simulated observations that we fabricated, and using Bayesian statistical inference, we are going to approximate the parameter we are after.
+
+We start by reading and formatting the observation's and simulations' files
+
+
 ```{r}
 
 
 #read observations
 observed_file_path = "ms_obs_final.out"
 obs_data = readLines(observed_file_path)
-
 
 
 
@@ -38,15 +44,13 @@ for(curr_sim in 1:total_simulations) {
   simulations[[curr_sim]] = lines[start:end]
 }
 
-simulations
-
 ```
 
 
 
 Our first parameter that we will calculate, will be the average number of pairwise differences between  all pairs of sequences. Below we have the implementation in R, but calling this function for all our simulations, severely slows the program down. 
 
-The snippet after this one, shows a nice way to optimize the dreadfully slow for-loops that R uses, by "translating" the function, with the help of Rcpp, into cpp code that can be compiled and run significantly faster.
+The snippet after this one, shows a nice way to optimize the dreadfully slow for-loops that R uses, by converting the function, with the help of Rcpp, into cpp code that can be compiled and run significantly faster.
 
 ```{r}
 library(stringdist)
@@ -183,14 +187,12 @@ comp <- mapply(identical,k_vals_r,k_vals_cpp)
 k_vals_cpp[!comp] #list of not identical values is empty -> results match 
 
 ```
+Whilst the R code takes on average roughly 10 minutes to do this calculation, we observe that the compiled cpp code requires only about a second. If we take in account that the dataset that we are using, when talking about population genetics, is considered a rather small and simple one, we can conclude that Rcpp can be a very powerful tool that can significantly speed up calculations.
 
 
-
-
-calculate w
+We have now calculated the differences in the SNPs in our simulations. We now have to calculate a second parameter, which is the differences that we would expect to observe in a population of constant size at equilibrium, based under the neutral theory model.
 
 ```{r}
-
 
 calc_a1 <- function(n) {
   a_1 = 0
@@ -230,14 +232,9 @@ w_estimate <- function(s,n) {
 # 
 # w = w_estimate(s_0,n_0)
 # w
-
-
-
- 
-
 ```
 
-calculate Tajima's D
+Tajima's D is the difference between the expected number of single nucleotide polymorphisms and the observed differences, normalized by an expression.  
 
 ```{r}
 
@@ -360,8 +357,8 @@ norm_k = normalize_param(sims_params[1,])
 norm_w = normalize_param(sims_params[2,])
 norm_d = normalize_param(sims_params[3,])
 
-
 sims_norm_params = lapply(1:total_simulations, function(i) list(k = norm_k[i], w = norm_w[i], d = norm_d[i]))
+
 
 #normalize observed parameters
 obs_norm_k = normalize_obs_param(obs_params[1],sims_params[1,])
@@ -370,6 +367,7 @@ obs_norm_d = normalize_obs_param(obs_params[3],sims_params[3,])
 
 #bundle results into a list
 obs_norm_params = list(k = obs_norm_k, w = obs_norm_w, d = obs_norm_d)
+
 
 ```
 
@@ -405,7 +403,7 @@ We have calculated each simulation's distance to our observed dataset. We need t
 
 Our end goal is not to find the 500 simulations that are closest to our observations, but rather, the 500 parameters that were used to generate these simulations.
 
-We must now, assosiate each distance with the parameter that generated it. The parameter list is in the file called pars_final.txt.
+We must now, associate each distance with the parameter that generated it. The parameter list is in the file called "pars_final.txt".
 
 
 ```{r}
@@ -436,24 +434,40 @@ best_params = sorted_params[1:threshold]
 best_params
 
 ```
+
 We have successfully detected the 500 parameters, that were used to generate simulations that were closest to our observations. 
 
 We can now, deep dive into these values, to try and find the parameter that was used to generate our observed dataset.
 
 ```{r}
 #calculate mean and median of parameters
-mean_params = mean(best_params)
-median_params = median(best_params)
+mean_params = mean(best_params) #98.4
+median_params = median(best_params) #98.6
 
-
+#plotting
 hist(best_params)
 plot(density(best_params))
 
+```
+
+Based on the graphs and the values we have calculated, our estimation for the growth rate parameter of our observations is about 98.4.
+
+In order to understand what this value represents, we must compare it to the parameters that were used for our simulations. If we assume that, the values in the pars_final.txt file correspond to the time period of a year, if our value is smaller than the average, we can conclude that the growth rate has 
+
+```{r}
+#convert string list into numeric vector
+params_vec = as.double(unlist(generate_params))
+params_vec
+
+#calculate mean
+mean(params_vec) #185.5
+
+plot(density(params_vec))
 
 
 ```
 
-
+Given our assumptions, we can conclude that the rate of growth of the SARS-CoV-2 in the European population, has decreased, since we calculated a value of 98.4, whilst the mean of the parameters was about 185.5.
 
 
 
