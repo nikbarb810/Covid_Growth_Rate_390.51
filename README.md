@@ -4,14 +4,6 @@
 
 This project focuses on estimating the growth rate of the SARS-CoV-2 virus in the European population using genetic data analysis. The goal is to identify the parameter responsible for observed genetic changes.
 
-## Author
-
-- Author: [Nikolaos Barmparousis]
-- Contact: [nikolasbarmparousis@gmail.com]
-
-## License
-
-This project is licensed under the [Your License Name] License - see the [LICENSE](LICENSE) file for details.
 
 ## Methodology
 
@@ -64,3 +56,11 @@ This project is licensed under the [Your License Name] License - see the [LICENS
 ## Conclusion
 
 This project provides insights into the growth rate of SARS-CoV-2 in the European population using genetic data analysis. The estimation indicates a decrease in the growth rate, which may have implications for understanding the virus's evolution and spread.
+
+## Author
+
+- [Nikolaos Barmparousis](https://github.com/nikbarb810)
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
